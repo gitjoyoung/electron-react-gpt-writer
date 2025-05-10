@@ -280,6 +280,35 @@ ipcMain.handle('export-chat-history', async (_, history: any[]) => {
   }
 });
 
+// 채팅 내역 JSON 내보내기 핸들러
+ipcMain.handle('export-chat-history-json', async (_, history: any[]) => {
+  try {
+    // 저장할 파일 경로 선택
+    const { filePath } = await dialog.showSaveDialog({
+      title: '채팅 내역 JSON 저장',
+      defaultPath: 'chat-history.json',
+      filters: [
+        { name: 'JSON 파일', extensions: ['json'] }
+      ]
+    });
+
+    if (!filePath) {
+      return { success: false, error: '저장이 취소되었습니다.' };
+    }
+
+    // JSON 파일 저장
+    await fs.promises.writeFile(filePath, JSON.stringify(history, null, 2));
+    
+    return { success: true };
+  } catch (error) {
+    console.error('채팅 내역 JSON 내보내기 실패:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.' 
+    };
+  }
+});
+
 // ChatGPT 핸들러
 ipcMain.handle('chatGPT', async (_, prompt: string, apiKey: string) => {
   try {

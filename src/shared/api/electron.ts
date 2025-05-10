@@ -45,48 +45,34 @@ export interface AutomationResult {
   timestamp: string;
 }
 
+export interface ExportResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface ElectronAPI {
-  sendChatMessage: (params: {
-    apiKey: string;
-    message: string;
-    promptContent: string;
-  }) => Promise<{
-    success: boolean;
-    response?: string;
-    error?: string;
-  }>;
-
-  loadChatHistory: () => Promise<{
-    success: boolean;
-    history?: ChatHistory[];
-    error?: string;
-  }>;
-
-  saveChatHistory: (history: ChatHistory[]) => Promise<{
-    success: boolean;
-    error?: string;
-  }>;
-
-  deleteChatHistory: (timestamp: string) => Promise<{
-    success: boolean;
-    error?: string;
-  }>;
-
+  // 채팅 관련
+  chatGPT: (prompt: string, apiKey: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  loadChatHistory: () => Promise<{ success: boolean; history?: ChatHistory[]; error?: string }>;
+  saveChatHistory: (history: ChatHistory[]) => Promise<{ success: boolean; error?: string }>;
+  deleteChatHistory: (timestamp: string) => Promise<{ success: boolean; error?: string }>;
+  exportChatHistory: (history: ChatHistory[]) => Promise<ExportResult>;
+  exportChatHistoryJson: (history: ChatHistory[]) => Promise<ExportResult>;
   fetchUnsplashImages: (query: string) => Promise<{ success: boolean; images: UnsplashImage[] }>;
-  getPromptTemplates: () => Promise<PromptTemplate[]>;
-  savePromptTemplate: (template: Omit<PromptTemplate, "id">) => Promise<PromptTemplate>;
-  deletePromptTemplate: (id: string) => Promise<void>;
-  updatePromptTemplate: (template: PromptTemplate) => Promise<{ success: boolean; prompts?: PromptTemplate[]; error?: string }>;
-  exportToExcel: (chatHistory: ChatHistory[]) => Promise<{ success: boolean }>;
-  showNotification: (title: string, body: string, type: 'success' | 'error' | 'info') => void;
+
+  // 프롬프트 관련
   savePrompts: (prompts: PromptTemplate[]) => Promise<{ success: boolean; error?: string }>;
   loadPrompts: () => Promise<{ success: boolean; prompts?: PromptTemplate[]; error?: string }>;
+  updatePromptTemplate: (template: PromptTemplate) => Promise<{ success: boolean; prompts?: PromptTemplate[]; error?: string }>;
+
+  // API 키 관련
   saveApiKey: (apiKey: string) => Promise<{ success: boolean; error?: string }>;
   loadApiKeys: () => Promise<{ success: boolean; keys: string[]; error?: string }>;
   removeApiKey: (apiKey: string) => Promise<{ success: boolean; error?: string }>;
+
+  // UI 관련
   showMessageBox: (options: MessageBoxOptions) => Promise<MessageBoxReturnValue>;
-  exportChatHistory: (history: ChatHistory[]) => Promise<{ success: boolean }>;
-  chatGPT: (prompt: string, apiKey: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  showNotification: (title: string, body: string, type: 'success' | 'error' | 'info') => void;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
 }
   

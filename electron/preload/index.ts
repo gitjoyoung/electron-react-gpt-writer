@@ -1,4 +1,5 @@
 import { ipcRenderer, contextBridge, shell } from 'electron'
+import type { ChatHistory } from '../../src/shared/api/electron'
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -32,7 +33,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fetchUnsplashImages: (query: string) => ipcRenderer.invoke('fetch-unsplash-images', query),
 
   // 내보내기 관련
-  exportChatHistory: (history: any[]) => ipcRenderer.invoke('export-chat-history', history),
+  exportChatHistory: (history: ChatHistory[]) => ipcRenderer.invoke('export-chat-history', history),
+  exportChatHistoryJson: (history: ChatHistory[]) => ipcRenderer.invoke('export-chat-history-json', history),
 });
 
 // 외부 링크 열기는 electron 객체를 통해 직접 shell.openExternal 사용
