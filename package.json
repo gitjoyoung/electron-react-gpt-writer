@@ -28,11 +28,15 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@types/node": "^22.15.3",
+    "axios": "^1.9.0",
+    "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
     "electron-updater": "^6.3.9",
     "openai": "^4.97.0",
+    "tailwind-merge": "^3.2.0",
     "tailwind-scrollbar": "^4.0.2",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.2",

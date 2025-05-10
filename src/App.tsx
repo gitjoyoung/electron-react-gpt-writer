@@ -1,53 +1,35 @@
-import { useState } from 'react'
-import { Chat } from './features/chat/Chat'
-import { ApiKeyInput } from './features/apiKey/ApiKeyInput'
-import { PromptSelector } from './features/prompts/Prompts'
-import { usePrompts } from './shared/hooks/usePrompts'
-import './App.css'
+import { useState } from 'react';
+import { Results } from "./widgets/results";
+import { useStore } from "./shared/store/useStore";
+import "./App.css";
+import { Chat } from "./widgets/chat";
+import { ApiKeyInput } from "./widgets/apiKey";
+import { Prompts } from "./widgets/prompts";
+import { Automation } from "./widgets/automation";
 
 function App() {
-  const [apiKey, setApiKey] = useState('');
-  const { 
-    promptTemplates, 
-    selectedPrompt, 
-    togglePromptSelection, 
-    addPrompt, 
-    removePrompt,
-    updatePrompt
-  } = usePrompts();
+  const { apiKey } = useStore();
 
   return (
-    <div className="min-h-screen flex justify-center overflow-y-auto overflow-x-hidden">
-      <div className="w-full max-w-[1200px] p-4 sm:p-8 min-w-[768px] flex flex-col">
-        <div className="flex-shrink-0">
-          <ApiKeyInput onApiKeySelect={setApiKey} />
-        </div>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-7xl mx-auto space-y-4">
+        <ApiKeyInput />
         
         {apiKey && (
-          <div className="space-y-4 mt-8 flex-1">
-            <div className="flex-shrink-0">
-              <PromptSelector 
-                promptTemplates={promptTemplates}
-                selectedPrompt={selectedPrompt}
-                togglePromptSelection={togglePromptSelection}
-                addPrompt={addPrompt}
-                removePrompt={removePrompt}
-                updatePrompt={updatePrompt}
-              />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <Prompts />
+              <Chat />
             </div>
-            
-            <div className="flex-1">
-              <Chat 
-                apiKey={apiKey} 
-                onApiKeyChange={setApiKey} 
-                selectedPrompt={selectedPrompt}
-              />
+            <div className="space-y-4">
+              <Automation />
+              <Results />
             </div>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

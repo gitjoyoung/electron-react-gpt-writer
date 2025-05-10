@@ -8,9 +8,11 @@ import { readFile, writeFile } from 'node:fs/promises'
 import OpenAI from 'openai'
 import type { ChatHistory } from '../../src/shared/api/electron'
 import { config } from 'dotenv'
+import fetch from 'node-fetch'
+import fs from 'node:fs'
+import XLSX from 'xlsx'
 
 const require = createRequire(import.meta.url)
-const XLSX = require('xlsx')
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Load environment variables
@@ -60,43 +62,36 @@ const PROMPTS_FILE = process.env.NODE_ENV === 'development'
   ? path.join(process.env.APP_ROOT, 'prompts.json')
   : path.join(app.getPath('userData'), 'prompts.json')
 
-// 개발 환경에서 사용할 기본 API 키
-const DEFAULT_API_KEY = process.env.OPENAI_API_KEY || ''
+// 채팅 내역 파일 경로
+const CHAT_HISTORY_PATH = path.join(process.env.APP_ROOT, 'chat-history.json');
 
-const UNSPLASH_API_KEY = process.env.UNSPLASH_API_KEY || ''
+// 자동화 내역 파일 경로
+const AUTOMATION_HISTORY_PATH = path.join(process.env.APP_ROOT, 'automation-history.json');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+})
 
 async function createWindow() {
   win = new BrowserWindow({
     title: 'Main window',
     icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
-    width: 800, // 최소 크기로 시작
-    height: 600, // 최소 크기로 시작
-    minWidth: 800, // 최소 창 너비
-    minHeight: 600, // 최소 창 높이
+    width: 800,
+    height: 600,
+    minWidth: 800,
+    minHeight: 600,
     webPreferences: {
       preload,
       contextIsolation: true,
-      // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
-      // nodeIntegration: true,
-
-      // Consider using contextBridge.exposeInMainWorld
-      // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
-      // contextIsolation: false,
     },
   })
 
-  if (VITE_DEV_SERVER_URL) { // #298
+  if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
-    // Open devTool if the app is not packaged
     win.webContents.openDevTools()
   } else {
     win.loadFile(indexHtml)
   }
-
-  // Test actively push message to the Electron-Renderer
-  win.webContents.on('did-finish-load', () => {
-    win?.webContents.send('main-process-message', new Date().toLocaleString())
-  })
 
   // Make all links open with the browser, not with the application
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -132,23 +127,6 @@ app.on('activate', () => {
   }
 })
 
-// New window example arg: new windows url
-ipcMain.handle('open-win', (_, arg) => {
-  const childWindow = new BrowserWindow({
-    webPreferences: {
-      preload,
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  })
-
-  if (VITE_DEV_SERVER_URL) {
-    childWindow.loadURL(`${VITE_DEV_SERVER_URL}#${arg}`)
-  } else {
-    childWindow.loadFile(indexHtml, { hash: arg })
-  }
-})
-
 // API 키 저장 핸들러
 ipcMain.handle('save-api-key', async (_, apiKey: string) => {
   try {
@@ -178,13 +156,8 @@ ipcMain.handle('load-api-keys', async () => {
     const data = await readFile(API_KEYS_FILE, 'utf-8')
     return { success: true, keys: JSON.parse(data) }
   } catch (error) {
-    // 파일이 없는 경우 개발 환경에서는 기본 API 키 반환
+    // 파일이 없는 경우 빈 배열 반환
     if (error instanceof Error && ('code' in error) && error.code === 'ENOENT') {
-      if (process.env.NODE_ENV === 'development') {
-        const defaultKeys = [DEFAULT_API_KEY];
-        await writeFile(API_KEYS_FILE, JSON.stringify(defaultKeys, null, 2));
-        return { success: true, keys: defaultKeys };
-      }
       return { success: true, keys: [] }
     }
     console.error('API 키 불러오기 실패:', error)
@@ -217,6 +190,32 @@ ipcMain.handle('save-prompts', async (_, prompts: any[]) => {
   }
 });
 
+// 프롬프트 불러오기 핸들러
+ipcMain.handle('load-prompts', async () => {
+  try {
+    const data = await readFile(PROMPTS_FILE, 'utf-8');
+    return { success: true, prompts: JSON.parse(data) };
+  } catch (error) {
+    // 파일이 없는 경우 기본 프롬프트 반환
+    if (error instanceof Error && ('code' in error) && error.code === 'ENOENT') {
+      const defaultPrompts = [
+        {
+          id: "1",
+          name: "기고문 작성",
+          content: "다음 주제에 대해 한국어로 기고문 형식의 에세이를 작성해주세요. 마크다운 형식으로 작성하며, 논리적인 구조(서론, 본론, 결론)를 갖추고, 전체 분량은 A4 1장 이상(1500자 이상)이어야 합니다. 서론에는 독자의 흥미를 유도하는 후킹 멘트를 포함하고, 본문에는 대상의 생애, 핵심 사상, 대표작, 철학적 영향 등을 쉽고 명확하게 풀어 설명해주세요. 어려운 개념은 예시나 비유를 활용하고, 결론은 독자의 생각을 유도할 수 있도록 질문형 문장으로 마무리해주세요. 전체 글은 일반 독자를 위한 인문 교양 기고문 스타일로 작성해주세요. 또한 summary는 본문 중 실제 문장에서 자연스럽게 발췌 가능한 형태로 포함되어야 하며, 글의 핵심 내용을 160자 내외로 요약할 수 있도록 작성해주세요."
+,
+          responseFormat: "json",
+          columns: ["title", "content", "summary", "nickname"]
+        }
+        
+      ];
+      await writeFile(PROMPTS_FILE, JSON.stringify(defaultPrompts, null, 2));
+      return { success: true, prompts: defaultPrompts };
+    }
+    return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+  }
+});
+
 // 프롬프트 업데이트 핸들러
 ipcMain.handle('update-prompt', async (_, id: string, name: string, content: string, responseFormat: string, columns: string[]) => {
   try {
@@ -240,183 +239,40 @@ ipcMain.handle('update-prompt', async (_, id: string, name: string, content: str
   }
 });
 
-// 프롬프트 불러오기 핸들러
-ipcMain.handle('load-prompts', async () => {
-  try {
-    const data = await readFile(PROMPTS_FILE, 'utf-8');
-    return { success: true, prompts: JSON.parse(data) };
-  } catch (error) {
-    // 파일이 없는 경우 기본 프롬프트 반환
-    if (error instanceof Error && ('code' in error) && error.code === 'ENOENT') {
-      const defaultPrompts = [
-        {
-          id: "1",
-          name: "흥미로운 블로그 글 작성",
-          content: `너는 전문 블로그 작가야. 주어진 주제에 대해 흥미롭고 매력적인 블로그 포스팅을 작성해줘.
-
-주제: {주제}
-
-다음 가이드라인을 따라 작성해줘:
-1. 흥미로운 도입부로 시작하기
-2. 실제 사례나 예시를 포함하기
-3. 독자의 관심을 끌 수 있는 질문이나 생각할 거리 제시하기
-4. 전문적인 정보를 쉽고 재미있게 전달하기
-5. 마무리는 다음 글에 대한 기대감을 주는 방식으로
-
-모든 내용은 반드시 한글로 작성해줘.
-응답은 반드시 다음 형식의 JSON으로 반환해줘:
-{
-  "title": "블로그 제목",
-  "content": "# 마크다운 형식의 본문\\n\\n## 소제목\\n\\n본문 내용...\\n\\n- 글머리 기호\\n- 글머리 기호\\n\\n> 인용구\\n\\n\`\`\`\\n코드 블록\\n\`\`\`",
-  "nickname": "작성자 닉네임",
-  "summary": "블로그 글의 핵심 요약"
-}`,
-          responseFormat: "json",
-          columns: ["title", "content", "nickname", "summary"],
-          updatedAt: Date.now()
-        },
-        {
-          id: "2",
-          name: "전문가 답변",
-          content: `너는 해당 분야의 전문가야. 주어진 주제에 대해 전문적이고 깊이 있는 답변을 제공해줘.
-
-주제: {주제}
-
-다음 가이드라인을 따라 답변해줘:
-1. 해당 분야의 전문적인 지식과 통찰력 제공
-2. 실제 사례나 연구 결과를 인용하여 신뢰성 확보
-3. 복잡한 개념을 명확하게 설명
-4. 실용적인 조언이나 해결책 제시
-5. 추가 학습이나 참고할 만한 자료 추천
-
-모든 내용은 반드시 한글로 작성해줘.
-응답은 반드시 다음 형식의 JSON으로 반환해줘:
-{
-  "title": "답변 제목",
-  "content": "# 마크다운 형식의 전문가 답변\\n\\n## 핵심 내용\\n\\n상세 설명...\\n\\n### 예시\\n\\n- 예시 1\\n- 예시 2\\n\\n> 인용구\\n\\n\`\`\`\\n코드 예시\\n\`\`\`",
-  "nickname": "전문가 닉네임",
-  "summary": "답변의 핵심 요약"
-}`,
-          responseFormat: "json",
-          columns: ["title", "content", "nickname", "summary"],
-          updatedAt: Date.now()
-        }
-      ];
-      await writeFile(PROMPTS_FILE, JSON.stringify(defaultPrompts, null, 2));
-      return { success: true, prompts: defaultPrompts };
-    }
-    return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' };
-  }
-});
-
-// 외부 링크 열기 핸들러
-ipcMain.handle('open-external', async (_, url: string) => {
-  try {
-    await shell.openExternal(url);
-    return { success: true };
-  } catch (error) {
-    console.error('외부 링크 열기 실패:', error);
-    return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' };
-  }
-});
-
-// dialog 핸들러 추가
-ipcMain.handle('show-message-box', async (_, options) => {
-  return dialog.showMessageBox(win!, options);
-});
-
-ipcMain.handle('show-error-box', async (_, title, content) => {
-  dialog.showErrorBox(title, content);
-});
-
-// Unsplash 이미지 검색 핸들러
-ipcMain.handle('fetch-unsplash-images', async (_, query: string) => {
-  try {
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=3&client_id=${UNSPLASH_API_KEY}`
-    );
-    
-    if (!response.ok) {
-      throw new Error('Unsplash API 요청 실패');
-    }
-
-    const data = await response.json();
-    return { 
-      success: true, 
-      images: data.results.map((img: any) => ({
-        id: img.id,
-        urls: {
-          regular: img.urls.regular,
-          small: img.urls.small
-        },
-        alt_description: img.alt_description,
-        user: {
-          name: img.user.name,
-          username: img.user.username
-        }
-      }))
-    };
-  } catch (error) {
-    console.error('Unsplash 이미지 검색 실패:', error);
-    return { 
-      success: false, 
-      images: [],
-      error: error instanceof Error ? error.message : '알 수 없는 오류' 
-    };
-  }
-});
-
-// 채팅 기록 엑셀 내보내기 핸들러
+// 채팅 내역 엑셀 내보내기 핸들러
 ipcMain.handle('export-chat-history', async (_, history: any[]) => {
   try {
-    // 저장 경로 선택 다이얼로그 표시
-    const { filePath, canceled } = await dialog.showSaveDialog(win!, {
-      title: '채팅 기록 저장',
-      defaultPath: path.join(os.homedir(), 'Desktop', 'chat-history.xlsx'),
+    const workbook = XLSX.utils.book_new();
+    
+    // 데이터를 워크시트 형식으로 변환 (키를 그대로 사용)
+    const worksheet = XLSX.utils.json_to_sheet(history);
+
+    // 기본 칼럼 너비 설정
+    const wscols = Object.keys(history[0] || {}).map(() => ({ wch: 25 }));
+    worksheet['!cols'] = wscols;
+
+    // 워크시트를 워크북에 추가
+    XLSX.utils.book_append_sheet(workbook, worksheet, '채팅 내역');
+
+    // 저장할 파일 경로 선택
+    const { filePath } = await dialog.showSaveDialog({
+      title: '채팅 내역 저장',
+      defaultPath: 'chat-history.xlsx',
       filters: [
         { name: 'Excel 파일', extensions: ['xlsx'] }
       ]
     });
 
-    if (canceled || !filePath) {
+    if (!filePath) {
       return { success: false, error: '저장이 취소되었습니다.' };
     }
 
-    // 엑셀 워크북 생성
-    const workbook = XLSX.utils.book_new();
-    
-    // 데이터 포맷팅
-    const formattedData = history.map(item => ({
-      '시간': new Date(item.timestamp).toLocaleString(),
-      '질문': item.query,
-      '제목': item.title || '',
-      '내용': item.content || '',
-      '닉네임': item.nickname || '',
-      '요약': item.summary || ''
-    }));
-
-    // 워크시트 생성
-    const worksheet = XLSX.utils.json_to_sheet(formattedData);
-
-    // 열 너비 자동 조정
-    worksheet['!cols'] = [
-      { wch: 20 }, // 시간
-      { wch: 30 }, // 질문
-      { wch: 40 }, // 제목
-      { wch: 50 }, // 내용
-      { wch: 20 }, // 닉네임
-      { wch: 40 }  // 요약
-    ];
-
-    // 워크북에 워크시트 추가
-    XLSX.utils.book_append_sheet(workbook, worksheet, '채팅 기록');
-
-    // 파일 저장
+    // 엑셀 파일 저장
     XLSX.writeFile(workbook, filePath);
-
+    
     return { success: true };
   } catch (error) {
-    console.error('채팅 기록 내보내기 실패:', error);
+    console.error('채팅 내역 내보내기 실패:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.' 
@@ -425,85 +281,131 @@ ipcMain.handle('export-chat-history', async (_, history: any[]) => {
 });
 
 // ChatGPT 핸들러
-ipcMain.handle('chat-gpt', async (_, prompt: string, apiKey: string) => {
+ipcMain.handle('chatGPT', async (_, prompt: string, apiKey: string) => {
   try {
     const openai = new OpenAI({
       apiKey: apiKey
-    });
+    })
+    console.log("prompt" , prompt)
 
     const completion = await openai.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model: 'gpt-3.5-turbo',
-    });
+      messages: [{ role: "user", content: prompt }],
+      model: "gpt-4o-mini",
+      temperature: 0.7,
+      max_tokens: 2048, // GPT-3.5-turbo의 최대 토큰 수
+    })
 
-    return {
-      success: true,
-      message: completion.choices[0]?.message?.content || '응답을 받지 못했습니다.'
-    };
-  } catch (error: any) {
-    console.error('ChatGPT API 오류:', error);
-    return {
-      success: false,
-      error: error.message || '알 수 없는 오류가 발생했습니다.'
-    };
+    const message = completion.choices[0]?.message?.content
+    if (!message) {
+      throw new Error('응답이 없습니다.')
+    }
+
+    return { success: true, message }
+  } catch (error) {
+    console.error('ChatGPT 요청 실패:', error)
+    let errorMessage = '알 수 없는 오류가 발생했습니다.'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('401')) {
+        errorMessage = 'Invalid API key'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
+    return { success: false, error: errorMessage }
+  }
+})
+
+// 알림 핸들러
+ipcMain.handle('show-notification', (_, title: string, body: string, type: 'success' | 'error' | 'info') => {
+  try {
+    new Notification({
+      title,
+      body,
+      icon: type === 'error'
+        ? path.join(process.env.VITE_PUBLIC!, 'error.png')
+        : type === 'success'
+          ? path.join(process.env.VITE_PUBLIC!, 'success.png')
+          : path.join(process.env.VITE_PUBLIC!, 'info.png')
+    }).show()
+    return { success: true }
+  } catch (error) {
+    console.error('알림 표시 실패:', error)
+    return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' }
+  }
+})
+
+// 메시지 박스 핸들러
+ipcMain.handle('show-message-box', async (_, options) => {
+  try {
+    const result = await dialog.showMessageBox(win!, options)
+    return { success: true, result }
+  } catch (error) {
+    console.error('메시지 박스 표시 실패:', error)
+    return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' }
+  }
+})
+
+// 에러 박스 핸들러
+ipcMain.handle('show-error-box', (_, title: string, content: string) => {
+  try {
+    dialog.showErrorBox(title, content)
+    return { success: true }
+  } catch (error) {
+    console.error('에러 박스 표시 실패:', error)
+    return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' }
+  }
+})
+
+// openExternal 핸들러 추가
+ipcMain.handle('open-external', async (_, url: string) => {
+  try {
+    await shell.openExternal(url)
+    return { success: true }
+  } catch (error) {
+    console.error('외부 링크 열기 실패:', error)
+    return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' }
+  }
+})
+
+// 채팅 내역 로드
+ipcMain.handle('loadChatHistory', async () => {
+  try {
+    if (!fs.existsSync(CHAT_HISTORY_PATH)) {
+      return { success: true, history: [] };
+    }
+
+    const data = await fs.promises.readFile(CHAT_HISTORY_PATH, 'utf-8');
+    const history = JSON.parse(data);
+    return { success: true, history };
+  } catch (error) {
+    console.error('채팅 내역 로드 실패:', error);
+    return { success: false, error: '채팅 내역을 불러오는데 실패했습니다.' };
   }
 });
 
-// 알림 핸들러
-ipcMain.handle('show-notification', async (_, title: string, body: string, type: 'success' | 'error' | 'info') => {
-  const iconPath = {
-    success: path.join(__dirname, '../resources/success.png'),
-    error: path.join(__dirname, '../resources/error.png'),
-    info: path.join(__dirname, '../resources/info.png')
-  }[type];
-
-  new Notification({ 
-    title, 
-    body, 
-    icon: iconPath
-  }).show();
+// 채팅 내역 저장
+ipcMain.handle('saveChatHistory', async (_, history) => {
+  try {
+    await fs.promises.writeFile(CHAT_HISTORY_PATH, JSON.stringify(history, null, 2));
+    return { success: true };
+  } catch (error) {
+    console.error('채팅 내역 저장 실패:', error);
+    return { success: false, error: '채팅 내역을 저장하는데 실패했습니다.' };
+  }
 });
 
-// 엑셀 내보내기 핸들러
-ipcMain.handle('export-to-excel', async (_, chatHistory: ChatHistory[]) => {
+// 채팅 내역 삭제
+ipcMain.handle('deleteChatHistory', async (_, timestamp) => {
   try {
-    const XLSX = require('xlsx');
-    const workbook = XLSX.utils.book_new();
-    
-    // 데이터 변환
-    const data = chatHistory.map((entry: ChatHistory) => ({
-      '시간': new Date(entry.timestamp).toLocaleString(),
-      '질문': entry.query,
-      '응답': entry.response
-    }));
-    
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    
-    // 열 너비 자동 조정
-    const maxWidth = 50;
-    worksheet['!cols'] = [
-      { wch: 20 }, // 시간
-      { wch: 30 }, // 질문
-      { wch: maxWidth } // 응답
-    ];
-    
-    XLSX.utils.book_append_sheet(workbook, worksheet, '채팅 내역');
-    
-    // 파일 저장 다이얼로그
-    const { filePath } = await dialog.showSaveDialog({
-      title: '엑셀 파일 저장',
-      defaultPath: `chat_history_${new Date().toISOString().split('T')[0]}.xlsx`,
-      filters: [{ name: 'Excel Files', extensions: ['xlsx'] }]
-    });
-    
-    if (filePath) {
-      XLSX.writeFile(workbook, filePath);
-      return { success: true };
-    }
-    
-    return { success: false };
+    const data = await fs.promises.readFile(CHAT_HISTORY_PATH, 'utf-8');
+    const history = JSON.parse(data);
+    const updatedHistory = history.filter((item: any) => item.timestamp !== timestamp);
+    await fs.promises.writeFile(CHAT_HISTORY_PATH, JSON.stringify(updatedHistory, null, 2));
+    return { success: true };
   } catch (error) {
-    console.error('Excel export error:', error);
-    return { success: false };
+    console.error('채팅 내역 삭제 실패:', error);
+    return { success: false, error: '채팅 내역을 삭제하는데 실패했습니다.' };
   }
 });

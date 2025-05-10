@@ -2,20 +2,40 @@ import { ipcRenderer, contextBridge, shell } from 'electron'
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('electronAPI', {
+  // API 키 관련
   saveApiKey: (apiKey: string) => ipcRenderer.invoke('save-api-key', apiKey),
   loadApiKeys: () => ipcRenderer.invoke('load-api-keys'),
   removeApiKey: (apiKey: string) => ipcRenderer.invoke('remove-api-key', apiKey),
+
+  // 프롬프트 관련
   savePrompts: (prompts: any[]) => ipcRenderer.invoke('save-prompts', prompts),
   loadPrompts: () => ipcRenderer.invoke('load-prompts'),
-  updatePrompt: (id: string, name: string, content: string) => ipcRenderer.invoke('update-prompt', id, name, content),
-  openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+  updatePromptTemplate: (template: any) => ipcRenderer.invoke('update-prompt', template),
+
+  // 채팅 관련
+  chatGPT: (prompt: string, apiKey: string) => ipcRenderer.invoke('chatGPT', prompt, apiKey),
+  loadChatHistory: () => ipcRenderer.invoke('loadChatHistory'),
+  saveChatHistory: (history: any[]) => ipcRenderer.invoke('saveChatHistory', history),
+  deleteChatHistory: (timestamp: string) => ipcRenderer.invoke('deleteChatHistory', timestamp),
+
+  // 자동화 관련
+  loadAutomationHistory: () => ipcRenderer.invoke('loadAutomationHistory'),
+  saveAutomationHistory: (history: any[]) => ipcRenderer.invoke('saveAutomationHistory', history),
+  exportAutomationHistory: (history: any[]) => ipcRenderer.invoke('exportAutomationHistory', history),
+
+  // UI 관련
   showMessageBox: (options: any) => ipcRenderer.invoke('show-message-box', options),
   showErrorBox: (title: string, content: string) => ipcRenderer.invoke('show-error-box', title, content),
+  showNotification: (title: string, body: string, type: 'success' | 'error' | 'info') => ipcRenderer.invoke('show-notification', title, body, type),
+
+  // 이미지 관련
   fetchUnsplashImages: (query: string) => ipcRenderer.invoke('fetch-unsplash-images', query),
+
+  // 내보내기 관련
   exportChatHistory: (history: any[]) => ipcRenderer.invoke('export-chat-history', history),
-  chatGPT: (prompt: string, apiKey: string) => ipcRenderer.invoke('chat-gpt', prompt, apiKey)
 });
 
+// 외부 링크 열기는 electron 객체를 통해 직접 shell.openExternal 사용
 contextBridge.exposeInMainWorld('electron', {
   openExternal: (url: string) => shell.openExternal(url)
 });

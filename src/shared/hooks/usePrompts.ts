@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PromptTemplate } from '../api/electron';
 
+// 프롬프트 파일 이름
+const PROMPTS_FILE = 'prompts.json';
+
 export const usePrompts = () => {
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTemplate | null>(null);
@@ -8,7 +11,7 @@ export const usePrompts = () => {
   const loadSavedPrompts = useCallback(async () => {
     try {
       const result = await window.electronAPI.loadPrompts();
-      if (result.success) {
+      if (result.success && result.prompts) {
         // 최신순으로 정렬
         const sortedPrompts = result.prompts.sort((a, b) => b.updatedAt - a.updatedAt);
         setPromptTemplates(sortedPrompts);
@@ -76,17 +79,20 @@ export const usePrompts = () => {
         updatedAt: Date.now()
       };
 
-      const otherPrompts = promptTemplates.filter(p => p.id !== id);
-      const updatedPrompts = [updatedPrompt, ...otherPrompts];
+      const result = await window.electronAPI.updatePromptTemplate(updatedPrompt);
       
-      const result = await window.electronAPI.savePrompts(updatedPrompts);
-      if (!result.success) {
+      if (result.success && result.prompts) {
+        const updatedPrompts = result.prompts;
+        setPromptTemplates(updatedPrompts);
+        
+        if (selectedPrompt?.id === id) {
+          const updated = updatedPrompts.find(p => p.id === id);
+          if (updated) {
+            setSelectedPrompt(updated);
+          }
+        }
+      } else {
         throw new Error(result.error || '프롬프트 수정에 실패했습니다.');
-      }
-      
-      setPromptTemplates(updatedPrompts);
-      if (selectedPrompt?.id === id) {
-        setSelectedPrompt(updatedPrompt);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
