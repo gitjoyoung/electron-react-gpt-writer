@@ -42,7 +42,46 @@ export const useChat = () => {
     const fetchImages = async () => {
       if (!response) return;
 
-      const searchTerm = response.split("\n")[0].slice(0, 50);
+      // 더 나은 검색어 추출 로직
+      let searchTerm = '';
+      
+      // 1. 사용자 입력에서 키워드 추출 (저장된 입력이 있다면)
+      const chatHistory = await window.electronAPI.loadChatHistory();
+      if (chatHistory.success && chatHistory.history && chatHistory.history.length > 0) {
+        const lastChat = chatHistory.history[chatHistory.history.length - 1];
+        const userInput = lastChat.prompt;
+        
+        // 사용자 입력이 짧고 명확한 경우 우선 사용
+        if (userInput && userInput.length <= 50 && !userInput.includes('\n')) {
+          searchTerm = userInput;
+        }
+      }
+      
+      // 2. 사용자 입력이 적절하지 않으면 응답에서 키워드 추출
+      if (!searchTerm) {
+        // 응답에서 첫 번째 의미 있는 문장이나 제목 추출
+        const lines = response.split('\n').filter(line => line.trim());
+        if (lines.length > 0) {
+          // 첫 번째 줄이 제목 형태인 경우 사용
+          let firstLine = lines[0].trim();
+          
+          // 마크다운 헤더 제거
+          firstLine = firstLine.replace(/^#+\s*/, '');
+          
+          // 특수 문자 제거하고 핵심 키워드만 추출
+          firstLine = firstLine.replace(/[#*_\[\]()]/g, '').trim();
+          
+          // 50자로 제한
+          searchTerm = firstLine.slice(0, 50);
+        }
+      }
+      
+      // 3. 그래도 없으면 기본값
+      if (!searchTerm) {
+        searchTerm = 'nature';
+      }
+
+      console.log('이미지 검색어:', searchTerm);
 
       setIsLoadingImages(true);
       try {

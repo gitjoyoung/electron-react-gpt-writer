@@ -4,7 +4,7 @@ import { MESSAGES, showMessage } from '../constants/messages';
 
 export const useApiKey = () => {
   const { apiKey, setApiKey } = useStore();
-  const [showInput, setShowInput] = useState(true);
+  const [showInput, setShowInput] = useState(!apiKey);
   const [savedApiKeys, setSavedApiKeys] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,6 +24,10 @@ export const useApiKey = () => {
   useEffect(() => {
     loadApiKeys();
   }, [loadApiKeys]);
+
+  useEffect(() => {
+    setShowInput(!apiKey);
+  }, [apiKey]);
 
   const validateApiKey = useCallback((key: string) => {
     if (!key) {

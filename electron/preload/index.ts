@@ -11,7 +11,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 프롬프트 관련
   savePrompts: (prompts: any[]) => ipcRenderer.invoke('save-prompts', prompts),
   loadPrompts: () => ipcRenderer.invoke('load-prompts'),
-  updatePromptTemplate: (template: any) => ipcRenderer.invoke('update-prompt', template),
+  updatePromptTemplate: (template: any) => ipcRenderer.invoke('update-prompt', 
+    template.id, 
+    template.name, 
+    template.content, 
+    template.responseFormat, 
+    template.columns
+  ),
 
   // 채팅 관련
   chatGPT: (prompt: string, apiKey: string) => ipcRenderer.invoke('chatGPT', prompt, apiKey),

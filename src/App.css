@@ -1,46 +1,30 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
-  :root {
-    --scrollbar-thumb: #D1D5DB;  /* gray-300 */
-    --scrollbar-thumb-hover: #9CA3AF;  /* gray-400 */
-    --scrollbar-track: transparent;
-  }
-
   body {
-    @apply bg-gray-100;
+    @apply bg-gray-50 text-gray-900;
   }
+}
 
-  /* 전역 스크롤바 스타일 */
-  * {
-    scrollbar-gutter: stable both-edges;
-    background-clip: padding-box;
-  }
+/* 스크롤바 스타일 (테일윈드 scrollbar 플러그인 사용) */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(209 213 219) transparent;
+}
 
-  /* Firefox */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
 
-  /* Chrome, Edge, Safari */
-  *::-webkit-scrollbar {
-    width: 8px;
-  }
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-  *::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-    border-radius: 4px;
-  }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(209 213 219);
+  border-radius: 3px;
+}
 
-  *::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb);
-    border-radius: 4px;
-  }
-
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: var(--scrollbar-thumb-hover);
-  }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(156 163 175);
 }
