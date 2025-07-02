@@ -41,7 +41,41 @@ if (!app.requestSingleInstanceLock()) {
  * 앱 초기화
  */
 const initializeApp = async () => {
+  console.log('=== 일렉트론 메인 프로세스 환경변수 체크 ===')
   console.log('현재 언어 설정: 한국어')
+  
+  // 환경변수 출력
+  console.log('🔧 환경변수 상태:')
+  console.log('  - NODE_ENV:', process.env.NODE_ENV || '미설정')
+  console.log('  - APP_ROOT:', process.env.APP_ROOT || '미설정')
+  console.log('  - LANG:', process.env.LANG || '미설정')
+  console.log('  - LC_ALL:', process.env.LC_ALL || '미설정')
+  
+  // Supabase 관련 환경변수
+  console.log('🗄️ Supabase 환경변수:')
+  console.log('  - VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL || '미설정')
+  console.log('  - VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY || '미설정')
+  
+  // OpenAI 관련 환경변수
+  console.log('🤖 OpenAI 환경변수:')
+  console.log('  - OPENAI_API_KEY:', process.env.OPENAI_API_KEY || '미설정')
+  
+  // 기타 환경변수
+  console.log('📁 파일 경로:')
+  console.log('  - __dirname:', __dirname)
+  console.log('  - process.cwd():', process.cwd())
+  
+  // 전체 환경변수 출력 (개발 모드에서만)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 모든 환경변수:')
+    Object.keys(process.env).forEach(key => {
+      if (key.startsWith('VITE_') || key.includes('OPENAI') || key.includes('SUPABASE')) {
+        console.log(`  - ${key}:`, process.env[key])
+      }
+    })
+  }
+  
+  console.log('================================================')
   
   // 윈도우 매니저 초기화
   initializeWindowManager()

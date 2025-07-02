@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadChatHistory: () => ipcRenderer.invoke('loadChatHistory'),
   saveChatHistory: (history: any[]) => ipcRenderer.invoke('saveChatHistory', history),
   deleteChatHistory: (timestamp: string) => ipcRenderer.invoke('deleteChatHistory', timestamp),
+  deleteAllChatHistory: () => ipcRenderer.invoke('deleteAllChatHistory'),
 
   // 자동화 관련
   loadAutomationHistory: () => ipcRenderer.invoke('loadAutomationHistory'),
@@ -31,16 +32,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportAutomationHistory: (history: any[]) => ipcRenderer.invoke('exportAutomationHistory', history),
 
   // UI 관련
-  showMessageBox: (options: any) => ipcRenderer.invoke('show-message-box', options),
+  showMessageBox: (options: any) => ipcRenderer.invoke('showMessageBox', options),
   showErrorBox: (title: string, content: string) => ipcRenderer.invoke('show-error-box', title, content),
   showNotification: (title: string, body: string, type: 'success' | 'error' | 'info') => ipcRenderer.invoke('show-notification', title, body, type),
-
-  // 이미지 관련
-  fetchUnsplashImages: (query: string) => ipcRenderer.invoke('fetch-unsplash-images', query),
 
   // 내보내기 관련
   exportChatHistory: (history: ChatHistory[]) => ipcRenderer.invoke('export-chat-history', history),
   exportChatHistoryJson: (history: ChatHistory[]) => ipcRenderer.invoke('export-chat-history-json', history),
+
+  // OpenAI API 키 관리
+  setOpenAIKey: (key: string) => ipcRenderer.invoke('setOpenAIKey', key),
+  getOpenAIKey: () => ipcRenderer.invoke('getOpenAIKey'),
+  removeOpenAIKey: () => ipcRenderer.invoke('removeOpenAIKey'),
 });
 
 // 외부 링크 열기는 electron 객체를 통해 직접 shell.openExternal 사용

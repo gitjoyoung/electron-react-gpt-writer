@@ -93,6 +93,20 @@ const deleteChatHistoryHandler = async (_: any, timestamp: string) => {
 }
 
 /**
+ * 전체 채팅 내역 삭제 핸들러
+ */
+const deleteAllChatHistoryHandler = async () => {
+  try {
+    const chatHistoryPath = getChatHistoryPath()
+    await fs.promises.writeFile(chatHistoryPath, JSON.stringify([], null, 2))
+    return { success: true }
+  } catch (error) {
+    console.error('전체 채팅 내역 삭제 실패:', error)
+    return { success: false, error: '전체 채팅 내역을 삭제하는데 실패했습니다.' }
+  }
+}
+
+/**
  * 채팅 관련 IPC 핸들러 등록
  */
 export const registerChatHandlers = () => {
@@ -100,6 +114,7 @@ export const registerChatHandlers = () => {
   ipcMain.handle('loadChatHistory', loadChatHistoryHandler)
   ipcMain.handle('saveChatHistory', saveChatHistoryHandler)
   ipcMain.handle('deleteChatHistory', deleteChatHistoryHandler)
+  ipcMain.handle('deleteAllChatHistory', deleteAllChatHistoryHandler)
   
   console.log('채팅 핸들러가 등록되었습니다.')
 } 

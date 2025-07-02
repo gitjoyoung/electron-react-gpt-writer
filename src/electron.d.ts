@@ -50,6 +50,11 @@ interface ElectronAPI {
     success: boolean;
     error?: string;
   }>;
+
+  deleteAllChatHistory: () => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
   
   sendChatMessage: (params: {
     apiKey: string;
@@ -86,13 +91,6 @@ interface ElectronAPI {
     success: boolean;
     error?: string;
   }>;
-
-  // 이미지 관련
-  fetchUnsplashImages: (query: string) => Promise<{
-    success: boolean;
-    images?: UnsplashImage[];
-    error?: string;
-  }>;
 }
 
 interface ChatHistory {
@@ -100,10 +98,4 @@ interface ChatHistory {
   prompt: string;
   response: string;
   promptContent: string;
-}
-
-interface UnsplashImage {
-  urls: {
-    small: string;
-  };
 } 

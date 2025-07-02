@@ -31,16 +31,9 @@ export const ResultList: React.FC<ResultListProps> = ({ results, onDelete }) => 
 
         return (
           <ResultItem
-            key={`${result.timestamp}-${index}`}
+            key={result.timestamp}
             result={result}
-            onDelete={async (timestamp) => {
-              try {
-                await onDelete(timestamp);
-              } catch (error) {
-                console.error('결과 삭제 중 오류 발생:', error);
-                // 여기서 에러 처리를 추가할 수 있습니다 (예: 토스트 메시지)
-              }
-            }}
+            onDelete={onDelete}
           />
         );
       })}

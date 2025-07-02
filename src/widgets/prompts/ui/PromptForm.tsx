@@ -21,11 +21,21 @@ export const PromptForm: React.FC<PromptFormProps> = ({
     
     // 필수 필드 검증
     if (!formState.name.trim()) {
-      alert('프롬프트 이름을 입력해주세요.');
+      await window.electronAPI.showMessageBox({
+        type: 'warning',
+        title: '입력 필요',
+        message: '프롬프트 이름을 입력해주세요.',
+        buttons: ['확인']
+      });
       return;
     }
     if (!formState.content.trim()) {
-      alert('프롬프트 내용을 입력해주세요.');
+      await window.electronAPI.showMessageBox({
+        type: 'warning',
+        title: '입력 필요',
+        message: '프롬프트 내용을 입력해주세요.',
+        buttons: ['확인']
+      });
       return;
     }
 
@@ -46,12 +56,17 @@ export const PromptForm: React.FC<PromptFormProps> = ({
     }));
   };
 
-  const handleAddColumn = () => {
+  const handleAddColumn = async (isEdit?: boolean) => {
     if (!formState.columnInput.trim()) return;
     
     // 이미 존재하는 속성인지 확인
     if (formState.columns.includes(formState.columnInput.trim())) {
-      alert('이미 존재하는 속성입니다.');
+      await window.electronAPI.showMessageBox({
+        type: 'warning',
+        title: '중복 속성',
+        message: '이미 존재하는 속성입니다.',
+        buttons: ['확인']
+      });
       return;
     }
 
@@ -63,7 +78,7 @@ export const PromptForm: React.FC<PromptFormProps> = ({
     }));
   };
 
-  const handleRemoveColumn = (index: number) => {
+  const handleRemoveColumn = (index: number, isEdit?: boolean) => {
     setFormState(prev => ({
       ...prev,
       columns: prev.columns.filter((_, i) => i !== index)

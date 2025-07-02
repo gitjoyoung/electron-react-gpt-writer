@@ -3,12 +3,11 @@ import { useStore } from '../../../shared/store/useStore';
 import type { PromptTemplate } from '../../../shared/api/electron';
 
 export const usePrompts = () => {
-  const { 
-    selectedPrompt, 
-    togglePromptSelection, 
-    addPrompt, 
-    removePrompt
-  } = useStore();
+  // 필요한 상태만 선택적으로 구독
+  const selectedPrompt = useStore(state => state.selectedPrompt);
+  const togglePromptSelection = useStore(state => state.togglePromptSelection);
+  const addPrompt = useStore(state => state.addPrompt);
+  const removePrompt = useStore(state => state.removePrompt);
 
   const [showForm, setShowForm] = useState(false);
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);

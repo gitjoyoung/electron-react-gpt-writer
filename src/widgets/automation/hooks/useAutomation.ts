@@ -10,7 +10,9 @@ interface Topic {
 }
 
 export const useAutomation = () => {
-  const { apiKey, selectedPrompt } = useStore();
+  // 필요한 상태만 선택적으로 구독
+  const apiKey = useStore(state => state.apiKey);
+  const selectedPrompt = useStore(state => state.selectedPrompt);
   const [isRunning, setIsRunning] = useState(false);
   const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
   const [progress, setProgress] = useState(0);
@@ -149,6 +151,9 @@ export const useAutomation = () => {
 
           // 대화 내역 저장
           await window.electronAPI.saveChatHistory([...currentHistory, newHistory]);
+
+          // Results 위젯에 변경사항 알림 (커스텀 이벤트 발생)
+          window.dispatchEvent(new Event('chatHistoryChanged'));
 
           console.log('=== 항목 처리 완료 ===');
           console.log('처리된 항목:', topic.name);

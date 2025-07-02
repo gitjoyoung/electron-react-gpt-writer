@@ -34,10 +34,10 @@ const showMessageBoxHandler = async (_: any, options: any) => {
     const mainWindow = windows.length > 0 ? windows[0] : null
     
     const result = await dialog.showMessageBox(mainWindow!, options)
-    return { success: true, result }
+    return result  // 직접 반환하여 result.response로 접근 가능하도록 수정
   } catch (error) {
     console.error('메시지 박스 표시 실패:', error)
-    return { success: false, error: error instanceof Error ? error.message : '알 수 없는 오류' }
+    throw error  // 에러를 throw하여 클라이언트에서 catch할 수 있도록 수정
   }
 }
 
@@ -72,7 +72,7 @@ const openExternalHandler = async (_: any, url: string) => {
  */
 export const registerUIHandlers = () => {
   ipcMain.handle('show-notification', showNotificationHandler)
-  ipcMain.handle('show-message-box', showMessageBoxHandler)
+  ipcMain.handle('showMessageBox', showMessageBoxHandler)  // preload와 일치하도록 수정
   ipcMain.handle('show-error-box', showErrorBoxHandler)
   ipcMain.handle('open-external', openExternalHandler)
   

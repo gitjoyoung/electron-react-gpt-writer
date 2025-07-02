@@ -10,10 +10,10 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({
   handleRemoveColumn,
   setColumns
 }) => {
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleAddColumn(isEdit);
+      await handleAddColumn(isEdit);
     }
   };
 
@@ -32,7 +32,7 @@ export const PropertyManager: React.FC<PropertyManagerProps> = ({
           className="flex-1 p-2 border rounded"
         />
         <button
-          onClick={() => handleAddColumn(isEdit)}
+          onClick={async () => await handleAddColumn(isEdit)}
           className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           추가

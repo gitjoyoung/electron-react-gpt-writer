@@ -1,7 +1,6 @@
 import { registerApiKeyHandlers } from './apiKeyHandlers'
 import { registerPromptHandlers } from './promptHandlers'
 import { registerChatHandlers } from './chatHandlers'
-import { registerImageHandlers } from './imageHandlers'
 import { registerExportHandlers } from './exportHandlers'
 import { registerUIHandlers } from './uiHandlers'
 import { registerUpdateHandlers } from './updateHandlers'
@@ -16,7 +15,6 @@ export const registerAllHandlers = () => {
   registerApiKeyHandlers()
   registerPromptHandlers()
   registerChatHandlers()
-  registerImageHandlers()
   registerExportHandlers()
   registerUIHandlers()
   registerUpdateHandlers()

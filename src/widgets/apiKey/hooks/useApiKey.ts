@@ -3,7 +3,9 @@ import { useStore } from '../../../shared/store/useStore';
 import { MESSAGES, showMessage } from '../constants/messages';
 
 export const useApiKey = () => {
-  const { apiKey, setApiKey } = useStore();
+  // 필요한 상태만 선택적으로 구독
+  const apiKey = useStore(state => state.apiKey);
+  const setApiKey = useStore(state => state.setApiKey);
   const [showInput, setShowInput] = useState(!apiKey);
   const [savedApiKeys, setSavedApiKeys] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);

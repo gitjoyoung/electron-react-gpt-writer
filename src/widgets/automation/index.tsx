@@ -13,7 +13,8 @@ interface Topic {
 
 export const Automation = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
-  const { selectedPrompt } = useStore();
+  // 필요한 상태만 선택적으로 구독
+  const selectedPrompt = useStore(state => state.selectedPrompt);
   const {
     isRunning,
     currentTopic,

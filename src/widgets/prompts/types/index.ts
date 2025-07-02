@@ -5,8 +5,8 @@ export interface PropertyManagerProps {
   isEdit: boolean;
   columnInput: string;
   setColumnInput: (value: string) => void;
-  handleAddColumn: (isEdit: boolean) => void;
-  handleRemoveColumn: (index: number, isEdit: boolean) => void;
+  handleAddColumn: (isEdit?: boolean) => Promise<void>;
+  handleRemoveColumn: (index: number, isEdit?: boolean) => void;
   setColumns: (columns: string[]) => void;
 }
 

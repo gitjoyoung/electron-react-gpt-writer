@@ -1,8 +1,11 @@
-import { supabase } from './supabase'
-import type { PostgrestError } from '@supabase/supabase-js'
+import { createClient, type PostgrestError } from '@supabase/supabase-js'
 
 // 기본 CRUD 작업을 위한 유틸리티 함수들
 
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+)
 /**
  * 데이터 조회
  */

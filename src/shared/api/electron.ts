@@ -5,12 +5,6 @@ export interface ChatHistory {
   promptContent: string;
 }
 
-export interface UnsplashImage {
-  urls: {
-    small: string;
-  };
-}
-
 export interface PromptTemplate {
   id: string;
   name: string;
@@ -56,9 +50,9 @@ export interface ElectronAPI {
   loadChatHistory: () => Promise<{ success: boolean; history?: ChatHistory[]; error?: string }>;
   saveChatHistory: (history: ChatHistory[]) => Promise<{ success: boolean; error?: string }>;
   deleteChatHistory: (timestamp: string) => Promise<{ success: boolean; error?: string }>;
+  deleteAllChatHistory: () => Promise<{ success: boolean; error?: string }>;
   exportChatHistory: (history: ChatHistory[]) => Promise<ExportResult>;
   exportChatHistoryJson: (history: ChatHistory[]) => Promise<ExportResult>;
-  fetchUnsplashImages: (query: string) => Promise<{ success: boolean; images: UnsplashImage[] }>;
 
   // 프롬프트 관련
   savePrompts: (prompts: PromptTemplate[]) => Promise<{ success: boolean; error?: string }>;

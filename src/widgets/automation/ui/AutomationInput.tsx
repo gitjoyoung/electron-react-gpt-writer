@@ -30,7 +30,8 @@ export const AutomationInput = ({
   completedTopicIds = []
 }: AutomationInputProps) => {
   const [input, setInput] = useState('');
-  const { selectedPrompt } = useStore();
+  // 필요한 상태만 선택적으로 구독
+  const selectedPrompt = useStore(state => state.selectedPrompt);
   const currentTopicRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
